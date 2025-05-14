@@ -1,24 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Note Taking App</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Baelz Notes</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Lora&family=Montserrat&family=Open+Sans&display=swap" rel="stylesheet">
 </head>
-<body>
-    <header>
-        <h1>Note Taking App</h1>
-        <div class="header-actions">
-            <button id="theme-switcher" aria-label="Switch theme">
-                <span class="material-symbols-outlined">dark_mode</span>
-            </button>
-            <button id="save-button">Save</button>
+<body class="light-theme">
+  <div class="app-container">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="app-logo">
+          <span class="material-symbols-outlined">edit_note</span>
+          <h1>Baelz Notes</h1>
         </div>
-    </header>
-    <main>
-        <textarea id="note-editor" placeholder="Start writing your note..."></textarea>
-    </main>
-    <script src="script.js"></script>
+        <button class="icon-button" id="toggle-sidebar" aria-label="Toggle sidebar">
+          <span class="material-symbols-outlined">menu</span>
+        </button>
+      </div>
+      <div class="sidebar-content">
+        <button class="new-note-btn" id="new-note">
+          <span class="material-symbols-outlined">add</span>
+          New Note
+        </button>
+        <div class="notes-list" id="notes-list">
+          <!-- Notes will be dynamically added here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+      <div class="toolbar">
+        <div class="left-tools">
+          <div class="formatting-tools">
+            <select id="font-family" class="tool-dropdown" aria-label="Font family">
+              <option value="Poppins">Poppins</option>
+              <option value="Roboto">Roboto</option>
+              <option value="Lora">Lora</option>
+              <option value="Montserrat">Montserrat</option>
+              <option value="Open Sans">Open Sans</option>
+            </select>
+            <select id="font-size" class="tool-dropdown" aria-label="Font size">
+              <option value="12px">12px</option>
+              <option value="14px" selected>14px</option>
+              <option value="16px">16px</option>
+              <option value="18px">18px</option>
+              <option value="20px">20px</option>
+              <option value="24px">24px</option>
+            </select>
+            <button class="tool-button" id="bold-button" aria-label="Bold">
+              <span class="material-symbols-outlined">format_bold</span>
+            </button>
+            <button class="tool-button" id="italic-button" aria-label="Italic">
+              <span class="material-symbols-outlined">format_italic</span>
+            </button>
+            <button class="tool-button" id="underline-button" aria-label="Underline">
+              <span class="material-symbols-outlined">format_underline</span>
+            </button>
+          </div>
+        </div>
+        <div class="right-tools">
+          <button class="save-button" id="save-button" aria-label="Save note">
+            <span class="material-symbols-outlined">save</span>
+            Save
+          </button>
+          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+            <span class="material-symbols-outlined">dark_mode</span>
+          </button>
+        </div>
+      </div>
+      <div class="note-editor">
+        <input type="text" id="note-title" placeholder="Untitled" aria-label="Note title">
+        <div id="note-content" class="note-content" contenteditable="true" aria-label="Note content"></div>
+      </div>
+    </div>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
