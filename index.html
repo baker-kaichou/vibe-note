@@ -16,12 +16,17 @@
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="app-logo">
-          <i class="material-icons">edit_note</i>
+          <div class="baerat-logo"></div>
           <h1>Baelz Notes</h1>
         </div>
-        <button class="icon-button" id="toggle-sidebar" aria-label="Toggle sidebar">
-          <i class="material-icons">menu</i>
-        </button>
+        <div class="theme-switch-container">
+          <i class="material-icons theme-icon">light_mode</i>
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle">
+            <span class="slider round"></span>
+          </label>
+          <i class="material-icons theme-icon">dark_mode</i>
+        </div>
       </div>
       <div class="sidebar-content">
         <button class="new-note-btn" id="new-note">
@@ -71,9 +76,7 @@
           </button>
           <button class="download-button" id="download-button" aria-label="Download note">
             <i class="material-icons">download</i>
-          </button>
-          <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-            <i class="material-icons">dark_mode</i>
+            <span>Download</span>
           </button>
         </div>
       </div>
