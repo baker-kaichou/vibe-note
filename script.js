@@ -1,427 +1,256 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", function () {
   // DOM Elements
-  const sidebar = document.getElementById("sidebar");
-  const newNoteButton = document.getElementById("new-note");
-  const notesList = document.getElementById("notes-list");
-  const noteTitle = document.getElementById("note-title");
-  const noteContent = document.getElementById("note-content");
-  const saveButton = document.getElementById("save-button");
-  const downloadButton = document.getElementById("download-button");
   const themeToggle = document.getElementById("theme-toggle");
-  const fontFamily = document.getElementById("font-family");
-  const fontSize = document.getElementById("font-size");
-  const boldButton = document.getElementById("bold-button");
-  const italicButton = document.getElementById("italic-button");
-  const underlineButton = document.getElementById("underline-button");
+  const notesListContainer = document.getElementById("notes-list");
+  const editorContainer = document.getElementById("editor-container");
+  const welcomeScreen = document.getElementById("welcome-screen");
+  const newNoteBtn = document.getElementById("new-note-btn");
+  const welcomeNewNoteBtn = document.getElementById("welcome-new-note-btn");
+  const saveBtn = document.getElementById("save-btn");
+  const noteTitleInput = document.getElementById("note-title");
+  const fontFamilySelect = document.getElementById("font-family");
+  const fontSizeSelect = document.getElementById("font-size");
+  const boldBtn = document.getElementById("bold-btn");
+  const italicBtn = document.getElementById("italic-btn");
+  const underlineBtn = document.getElementById("underline-btn");
 
   // State
   let notes = [];
   let currentNoteId = null;
-  let activeDeleteItem = null;
 
-  // Initialize
-  initApp();
+  // Initialize Quill editor
+  const quill = new Quill("#editor", {
+    theme: "snow",
+    modules: {
+      toolbar: false, // We're using our custom toolbar
+    },
+    placeholder: "Start writing your note...",
+  });
 
-  // Functions
-  function initApp() {
-    loadNotes();
-    setupEventListeners();
-    checkTheme();
-    
-    // Create a new note if there are no notes
-    if (notes.length === 0) {
-      createNewNote();
+  // Theme Toggling
+  themeToggle.addEventListener("change", function () {
+    if (this.checked) {
+      document.body.classList.remove("light-theme");
+      document.body.classList.add("dark-theme");
     } else {
-      loadNote(notes[0]);
-      setActiveNote(notes[0].id);
+      document.body.classList.remove("dark-theme");
+      document.body.classList.add("light-theme");
     }
-  }
+  });
 
-  function setupEventListeners() {
-    // New note
-    newNoteButton.addEventListener("click", createNewNote);
-
-    // Save note
-    saveButton.addEventListener("click", saveNote);
-    
-    // Download note
-    downloadButton.addEventListener("click", downloadNote);
-
-    // Theme toggle
-    themeToggle.addEventListener("change", toggleTheme);
-
-    // Font controls
-    fontFamily.addEventListener("change", updateFontFamily);
-    fontSize.addEventListener("change", updateFontSize);
-    boldButton.addEventListener("click", toggleBold);
-    italicButton.addEventListener("click", toggleItalic);
-    underlineButton.addEventListener("click", toggleUnderline);
-
-    // Auto-save on changes
-    noteTitle.addEventListener("input", debounce(autoSave, 1000));
-    noteContent.addEventListener("input", debounce(autoSave, 1000));
-
-    // Keyboard shortcuts
-    document.addEventListener("keydown", handleKeyboardShortcuts);
-    
-    // Handle clicks on document to close any open delete buttons
-    document.addEventListener("click", (e) => {
-      // If click is outside a note item
-      if (!e.target.closest(".note-item") && activeDeleteItem) {
-        document.querySelectorAll(".note-item").forEach(item => {
-          item.classList.remove("show-delete");
-        });
-        activeDeleteItem = null;
-      }
-    });
-  }
-
-  function loadNotes() {
-    const savedNotes = localStorage.getItem("baelz-notes");
-    if (savedNotes) {
-      notes = JSON.parse(savedNotes);
-      renderNotesList();
-    }
-  }
-
+  // Create a new note
   function createNewNote() {
     const newNote = {
-      id: Date.now(),
+      id: Date.now().toString(),
       title: "Untitled Note",
       content: "",
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     };
 
-    notes.unshift(newNote);
+    notes.push(newNote);
     currentNoteId = newNote.id;
-    saveNotesToStorage();
     renderNotesList();
+    showEditor();
     loadNote(newNote);
-    
-    // Focus on the title field
-    noteTitle.focus();
   }
 
+  // Render notes list in sidebar
   function renderNotesList() {
-    notesList.innerHTML = "";
-    
+    notesListContainer.innerHTML = "";
+
     if (notes.length === 0) {
-      const emptyState = document.createElement("div");
-      emptyState.className = "empty-state";
-      emptyState.textContent = "No notes yet. Create one!";
-      notesList.appendChild(emptyState);
+      notesListContainer.innerHTML =
+        '<div class="empty-notes">No notes yet</div>';
       return;
     }
 
     notes.forEach((note) => {
-      const noteItem = document.createElement("div");
-      noteItem.className = `note-item ${
+      const noteCard = document.createElement("div");
+      noteCard.className = `note-card ${
         note.id === currentNoteId ? "active" : ""
       }`;
-      noteItem.setAttribute("data-id", note.id);
-      noteItem.setAttribute("tabindex", "0");
+      noteCard.dataset.id = note.id;
 
-      // Create note content container
-      const noteItemContent = document.createElement("div");
-      noteItemContent.className = "note-item-content";
+      noteCard.innerHTML = `
+        <div class="note-card-title">${note.title}</div>
+        <button class="note-card-delete" data-id="${note.id}">
+          <span class="material-symbols-rounded">delete</span>
+        </button>
+      `;
 
-      const noteItemTitle = document.createElement("div");
-      noteItemTitle.className = "note-item-title";
-      noteItemTitle.textContent = note.title;
-
-      const noteItemExcerpt = document.createElement("div");
-      noteItemExcerpt.className = "note-item-excerpt";
-      noteItemExcerpt.textContent = stripHtml(note.content).substring(0, 50);
-
-      noteItemContent.appendChild(noteItemTitle);
-      noteItemContent.appendChild(noteItemExcerpt);
-      
-      // Create delete button
-      const deleteButton = document.createElement("button");
-      deleteButton.className = "delete-button";
-      deleteButton.innerHTML = '<i class="material-icons">delete</i>';
-      deleteButton.setAttribute("aria-label", "Delete note");
-      
-      // Add delete functionality
-      deleteButton.addEventListener("click", (e) => {
-        e.stopPropagation(); // Prevent note selection when clicking delete
-        deleteNote(note.id);
-      });
-
-      noteItem.appendChild(noteItemContent);
-      noteItem.appendChild(deleteButton);
-
-      noteItem.addEventListener("click", (e) => {
-        // If there's already an active delete item, hide it
-        if (activeDeleteItem && activeDeleteItem !== noteItem) {
-          activeDeleteItem.classList.remove("show-delete");
-        }
-        
-        // Toggle delete button visibility
-        if (e.target.closest(".note-item") && !e.target.closest(".delete-button")) {
-          if (noteItem.classList.contains("show-delete")) {
-            noteItem.classList.remove("show-delete");
-            activeDeleteItem = null;
-          } else {
-            noteItem.classList.add("show-delete");
-            activeDeleteItem = noteItem;
-          }
-        }
-        
-        loadNote(note);
-        setActiveNote(note.id);
-      });
-
-      noteItem.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
+      noteCard.addEventListener("click", function (e) {
+        if (!e.target.closest(".note-card-delete")) {
+          currentNoteId = note.id;
           loadNote(note);
-          setActiveNote(note.id);
-        } else if (e.key === "Delete") {
-          deleteNote(note.id);
+          renderNotesList(); // Re-render to update active state
         }
       });
 
-      notesList.appendChild(noteItem);
+      notesListContainer.appendChild(noteCard);
+    });
+
+    // Add delete event listeners
+    document.querySelectorAll(".note-card-delete").forEach((btn) => {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        const noteId = this.dataset.id;
+        deleteNote(noteId);
+      });
     });
   }
 
-  function deleteNote(id) {
-    if (confirm("Are you sure you want to delete this note?")) {
-      notes = notes.filter(note => note.id !== id);
-      saveNotesToStorage();
+  // Delete a note
+  function deleteNote(noteId) {
+    notes = notes.filter((note) => note.id !== noteId);
+
+    if (noteId === currentNoteId) {
+      currentNoteId = notes.length > 0 ? notes[0].id : null;
       
-      // If the deleted note was the current note, load another note if available
-      if (id === currentNoteId) {
-        if (notes.length > 0) {
-          loadNote(notes[0]);
-          setActiveNote(notes[0].id);
-        } else {
-          // If no notes left, clear the editor
-          currentNoteId = null;
-          noteTitle.value = "";
-          noteContent.innerHTML = "";
-        }
+      if (currentNoteId) {
+        loadNote(notes[0]);
+      } else {
+        hideEditor();
       }
-      
+    }
+
+    renderNotesList();
+  }
+
+  // Load note into editor
+  function loadNote(note) {
+    noteTitleInput.value = note.title;
+    quill.root.innerHTML = note.content;
+    showEditor();
+  }
+
+  // Show editor, hide welcome screen
+  function showEditor() {
+    welcomeScreen.style.display = "none";
+    editorContainer.style.display = "flex";
+  }
+
+  // Hide editor, show welcome screen
+  function hideEditor() {
+    welcomeScreen.style.display = "flex";
+    editorContainer.style.display = "none";
+  }
+
+  // Save current note
+  function saveCurrentNote() {
+    if (!currentNoteId) return;
+
+    const noteIndex = notes.findIndex((note) => note.id === currentNoteId);
+    if (noteIndex !== -1) {
+      notes[noteIndex].title = noteTitleInput.value;
+      notes[noteIndex].content = quill.root.innerHTML;
       renderNotesList();
     }
   }
 
-  function loadNote(note) {
-    currentNoteId = note.id;
-    noteTitle.value = note.title;
-    noteContent.innerHTML = note.content;
-    // Set active state
-    setActiveNote(note.id);
-  }
-
-  function setActiveNote(id) {
-    document.querySelectorAll(".note-item").forEach((item) => {
-      item.classList.remove("active");
-    });
-    
-    const activeItem = document.querySelector(`.note-item[data-id="${id}"]`);
-    if (activeItem) {
-      activeItem.classList.add("active");
-      // Ensure the active item is visible in the scrollable area
-      activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }
-
-  function saveNote() {
-    if (!currentNoteId) return;
-
-    const noteIndex = notes.findIndex((note) => note.id === currentNoteId);
-    if (noteIndex === -1) return;
-
-    notes[noteIndex].title = noteTitle.value || "Untitled Note";
-    notes[noteIndex].content = noteContent.innerHTML;
-    notes[noteIndex].updatedAt = new Date().toISOString();
-
-    saveNotesToStorage();
-    renderNotesList();
-    
-    // Show save animation
-    animateSaveButton();
-  }
-  
-  function animateSaveButton() {
-    saveButton.classList.add("saved");
-    saveButton.innerHTML = '<i class="material-icons">check</i><span>Saved</span>';
-    
-    setTimeout(() => {
-      saveButton.classList.remove("saved");
-      saveButton.innerHTML = '<i class="material-icons">save</i><span>Save</span>';
-    }, 2000);
-  }
-
-  function autoSave() {
-    if (currentNoteId) {
-      saveNote();
-    }
-  }
-
+  // Download note as JSON file
   function downloadNote() {
     if (!currentNoteId) return;
 
-    const noteIndex = notes.findIndex((note) => note.id === currentNoteId);
-    if (noteIndex === -1) return;
+    const note = notes.find((note) => note.id === currentNoteId);
+    if (!note) return;
 
-    const note = notes[noteIndex];
-    
-    // Create a formatted text file
-    const textContent = `# ${note.title}\n\n${stripHtml(note.content)}\n\nCreated: ${new Date(note.createdAt).toLocaleString()}\nUpdated: ${new Date().toLocaleString()}`;
-    
-    // Create safe filename
-    const safeTitle = note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    
-    // Create and trigger the download
-    const blob = new Blob([textContent], { type: "text/plain" });
+    // Save any pending changes
+    saveCurrentNote();
+
+    const noteData = JSON.stringify(note, null, 2);
+    const blob = new Blob([noteData], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const downloadLink = document.createElement("a");
-    downloadLink.href = url;
-    downloadLink.download = `${safeTitle}.txt`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${note.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
-    // Provide visual feedback for download
-    downloadButton.innerHTML = '<i class="material-icons">check</i><span>Downloaded</span>';
-    setTimeout(() => {
-      downloadButton.innerHTML = '<i class="material-icons">download</i><span>Download</span>';
-    }, 2000);
   }
 
-  function saveNotesToStorage() {
-    localStorage.setItem("baelz-notes", JSON.stringify(notes));
+  // Format text with Quill
+  function formatText(format) {
+    const selection = quill.getSelection();
+    if (selection) {
+      // Check current format state
+      const formatState = quill.getFormat(selection);
+      quill.format(format, !formatState[format]);
+      
+      // Update toolbar button states
+      updateFormatButtonStates(quill.getFormat(selection));
+    }
   }
 
-  function toggleTheme() {
-    const isDarkMode = themeToggle.checked;
-    
-    if (isDarkMode) {
-      document.body.classList.add("dark-theme");
-      document.body.classList.remove("light-theme");
+  // Update toolbar button states based on current format
+  function updateFormatButtonStates(formats) {
+    boldBtn.classList.toggle("active", formats.bold === true);
+    italicBtn.classList.toggle("active", formats.italic === true);
+    underlineBtn.classList.toggle("active", formats.underline === true);
+  }
+
+  // Update font family
+  function updateFontFamily(fontFamily) {
+    const selection = quill.getSelection();
+    if (selection) {
+      quill.format("font", fontFamily);
     } else {
-      document.body.classList.add("light-theme");
-      document.body.classList.remove("dark-theme");
+      quill.format("font", fontFamily);
     }
-    
-    localStorage.setItem("baelz-dark-mode", isDarkMode);
   }
 
-  function checkTheme() {
-    const isDarkMode = localStorage.getItem("baelz-dark-mode") === "true";
-    themeToggle.checked = isDarkMode;
-    
-    if (isDarkMode) {
-      document.body.classList.add("dark-theme");
-      document.body.classList.remove("light-theme");
+  // Update font size
+  function updateFontSize(fontSize) {
+    const selection = quill.getSelection();
+    if (selection) {
+      quill.format("size", fontSize);
     } else {
-      document.body.classList.add("light-theme");
-      document.body.classList.remove("dark-theme");
+      quill.format("size", fontSize);
     }
   }
 
-  function updateFontFamily() {
-    noteContent.style.fontFamily = fontFamily.value;
-  }
+  // Event Listeners
+  newNoteBtn.addEventListener("click", createNewNote);
+  welcomeNewNoteBtn.addEventListener("click", createNewNote);
+  saveBtn.addEventListener("click", downloadNote);
 
-  function updateFontSize() {
-    noteContent.style.fontSize = fontSize.value;
-  }
-
-  function toggleBold() {
-    document.execCommand("bold", false, null);
-    noteContent.focus();
-    checkActiveFormatting();
-  }
-
-  function toggleItalic() {
-    document.execCommand("italic", false, null);
-    noteContent.focus();
-    checkActiveFormatting();
-  }
-
-  function toggleUnderline() {
-    document.execCommand("underline", false, null);
-    noteContent.focus();
-    checkActiveFormatting();
-  }
-  
-  function checkActiveFormatting() {
-    // Check current selection formatting
-    boldButton.classList.toggle("active", document.queryCommandState("bold"));
-    italicButton.classList.toggle("active", document.queryCommandState("italic"));
-    underlineButton.classList.toggle("active", document.queryCommandState("underline"));
-  }
-  
-  // Check formatting when user selects text
-  noteContent.addEventListener("mouseup", checkActiveFormatting);
-  noteContent.addEventListener("keyup", checkActiveFormatting);
-
-  function handleKeyboardShortcuts(e) {
-    // Save: Ctrl/Cmd + S
-    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-      e.preventDefault();
-      saveNote();
-    }
-    
-    // New note: Ctrl/Cmd + N
-    if ((e.ctrlKey || e.metaKey) && e.key === "n") {
-      e.preventDefault();
-      createNewNote();
-    }
-    
-    // Bold: Ctrl/Cmd + B
-    if ((e.ctrlKey || e.metaKey) && e.key === "b") {
-      if (document.activeElement === noteContent) {
-        e.preventDefault();
-        toggleBold();
+  noteTitleInput.addEventListener("blur", saveCurrentNote);
+  noteTitleInput.addEventListener("keyup", function () {
+    if (currentNoteId) {
+      const noteIndex = notes.findIndex((note) => note.id === currentNoteId);
+      if (noteIndex !== -1) {
+        notes[noteIndex].title = this.value;
+        renderNotesList();
       }
     }
-    
-    // Italic: Ctrl/Cmd + I
-    if ((e.ctrlKey || e.metaKey) && e.key === "i") {
-      if (document.activeElement === noteContent) {
-        e.preventDefault();
-        toggleItalic();
-      }
-    }
-    
-    // Underline: Ctrl/Cmd + U
-    if ((e.ctrlKey || e.metaKey) && e.key === "u") {
-      if (document.activeElement === noteContent) {
-        e.preventDefault();
-        toggleUnderline();
-      }
-    }
-    
-    // Download: Ctrl/Cmd + D
-    if ((e.ctrlKey || e.metaKey) && e.key === "d") {
-      e.preventDefault();
-      downloadNote();
-    }
-  }
+  });
 
-  // Helper Functions
-  function stripHtml(html) {
-    const temp = document.createElement("div");
-    temp.innerHTML = html;
-    return temp.textContent || temp.innerText || "";
-  }
+  boldBtn.addEventListener("click", () => formatText("bold"));
+  italicBtn.addEventListener("click", () => formatText("italic"));
+  underlineBtn.addEventListener("click", () => formatText("underline"));
 
-  function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
+  fontFamilySelect.addEventListener("change", function () {
+    updateFontFamily(this.value);
+  });
+
+  fontSizeSelect.addEventListener("change", function () {
+    updateFontSize(this.value);
+  });
+
+  // Update format button states when selection changes
+  quill.on("selection-change", function (range) {
+    if (range) {
+      const formats = quill.getFormat(range);
+      updateFormatButtonStates(formats);
+    }
+  });
+
+  // Auto-save current note content when quill editor changes
+  quill.on("text-change", function () {
+    saveCurrentNote();
+  });
+
+  // Initialize the app
+  hideEditor(); // Start with welcome screen
 });
