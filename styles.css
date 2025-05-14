@@ -70,7 +70,7 @@ body {
 
 /* Sidebar Styles */
 .sidebar {
-  width: 250px;
+  width: 220px;
   background-color: var(--surface);
   height: 100%;
   transition: var(--transition);
@@ -79,18 +79,14 @@ body {
   box-shadow: var(--shadow);
   position: relative;
   z-index: 10;
-  overflow-x: hidden;
-}
-
-.sidebar.collapsed {
-  width: 60px;
 }
 
 .sidebar-header {
   padding: 16px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   border-bottom: 1px solid var(--divider);
 }
 
@@ -101,17 +97,83 @@ body {
   color: var(--primary);
 }
 
+.baerat-logo {
+  width: 32px;
+  height: 32px;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzNiAzNiI+PHBhdGggZmlsbD0iI2U5NDA1NyIgZD0iTTEyLjUgNkMxOCA2IDIyLjUgMTAuNSAyMi41IDE2YzAgNS41LTQuNSAxMC0xMCAxMFM2IDIxLjUgNiAxNiAxMCA2IDEyLjUgNnptMCA0LjVhNS41IDUuNSAwIDEwMCAxMSA1LjUgNS41IDAgMDAwLTExeiIvPjxwYXRoIGZpbGw9IiNlOTQwNTciIGQ9Ik0yMyA2YzUuNSAwIDEwIDQuNSAxMCAxMHMtNC41IDEwLTEwIDEwLTEwLTQuNS0xMC0xMCA0LjUtMTAgMTAtMTB6bTAgNC41YTUuNSA1LjUgMCAxMDAgMTEgNS41IDUuNSAwIDAwMC0xMXoiLz48Y2lyY2xlIGZpbGw9IiNlOTQwNTciIGN4PSIxOCIgY3k9IjE4IiByPSIzLjUiLz48cGF0aCBmaWxsPSIjZTk0MDU3IiBkPSJNMTggMjdjMi41IDAgNC41IDIgNC41IDQuNXMtMiA0LjUtNC41IDQuNS00LjUtMi00LjUtNC41UzE1LjUgMjcgMTggMjd6Ii8+PC9zdmc+');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
 .app-logo h1 {
   font-size: 18px;
   font-weight: 600;
-  transition: var(--transition);
   white-space: nowrap;
 }
 
-.sidebar.collapsed .app-logo h1 {
+/* Theme Switch */
+.theme-switch-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.theme-icon {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.theme-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+}
+
+.theme-switch input {
   opacity: 0;
   width: 0;
-  overflow: hidden;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--text-secondary);
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
 }
 
 .sidebar-content {
@@ -152,15 +214,6 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-.sidebar.collapsed .new-note-btn span {
-  display: none;
-}
-
-.sidebar.collapsed .new-note-btn {
-  padding: 10px;
-  justify-content: center;
-}
-
 .notes-list {
   display: flex;
   flex-direction: column;
@@ -172,8 +225,8 @@ body {
   border-radius: var(--radius);
   cursor: pointer;
   transition: var(--transition);
-  display: flex;
-  flex-direction: column;
+  position: relative;
+  overflow: hidden;
   animation: fadeIn 0.3s ease;
 }
 
@@ -184,6 +237,12 @@ body {
 .note-item.active {
   background-color: rgba(233, 64, 87, 0.1);
   border-left: 3px solid var(--primary);
+}
+
+.note-item-content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .note-item-title {
@@ -202,12 +261,26 @@ body {
   text-overflow: ellipsis;
 }
 
-.sidebar.collapsed .note-item-title,
-.sidebar.collapsed .note-item-excerpt {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  overflow: hidden;
+.delete-button {
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #ff3b30;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: right 0.3s ease;
+}
+
+.note-item.show-delete .delete-button {
+  right: 8px;
 }
 
 /* Main Content Styles */
@@ -302,7 +375,6 @@ body {
 }
 
 .download-button {
-  padding: 8px;
   background-color: var(--accent);
 }
 
@@ -318,47 +390,6 @@ body {
 
 .save-button.saved {
   background-color: #4CAF50;
-}
-
-.theme-toggle {
-  background-color: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--divider);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.theme-toggle:hover {
-  background-color: var(--background);
-  transform: translateY(-2px);
-}
-
-.theme-toggle:active {
-  transform: translateY(0);
-}
-
-.icon-button {
-  background-color: transparent;
-  color: var(--text-primary);
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.icon-button:hover {
-  background-color: var(--background);
 }
 
 .note-editor {
@@ -472,21 +503,23 @@ button:active::after {
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    transform: translateX(0);
-    z-index: 100;
+  .app-container {
+    flex-direction: column;
   }
   
-  .sidebar.collapsed {
-    transform: translateX(-250px);
-    width: 250px;
+  .sidebar {
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .sidebar-header {
+    flex-direction: row;
+    justify-content: space-between;
   }
   
   .main-content {
+    flex: 1;
     width: 100%;
   }
   
@@ -494,14 +527,6 @@ button:active::after {
     flex-wrap: wrap;
     justify-content: flex-start;
     gap: 4px;
-  }
-  
-  .save-button span {
-    display: none;
-  }
-  
-  .save-button {
-    padding: 8px;
   }
 }
 
@@ -522,6 +547,11 @@ button:active::after {
   .right-tools {
     align-self: flex-end;
   }
+  
+  .download-button span, 
+  .save-button span {
+    display: none;
+  }
 }
 
 /* Focus styles for accessibility */
@@ -531,11 +561,4 @@ select:focus,
 input:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-}
-
-/* Touch device optimizations */
-@media (hover: none) {
-  .sidebar:not(.collapsed) {
-    width: 100%;
-  }
 }
