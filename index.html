@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto&family=Lora&family=Montserrat&family=Open+Sans&display=swap" rel="stylesheet">
 </head>
 <body class="light-theme">
@@ -16,17 +16,17 @@
     <div class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <div class="app-logo">
-          <span class="material-symbols-outlined">edit_note</span>
+          <i class="material-icons">edit_note</i>
           <h1>Baelz Notes</h1>
         </div>
         <button class="icon-button" id="toggle-sidebar" aria-label="Toggle sidebar">
-          <span class="material-symbols-outlined">menu</span>
+          <i class="material-icons">menu</i>
         </button>
       </div>
       <div class="sidebar-content">
         <button class="new-note-btn" id="new-note">
-          <span class="material-symbols-outlined">add</span>
-          New Note
+          <i class="material-icons">add</i>
+          <span>New Note</span>
         </button>
         <div class="notes-list" id="notes-list">
           <!-- Notes will be dynamically added here -->
@@ -54,23 +54,26 @@
               <option value="24px">24px</option>
             </select>
             <button class="tool-button" id="bold-button" aria-label="Bold">
-              <span class="material-symbols-outlined">format_bold</span>
+              <i class="material-icons">format_bold</i>
             </button>
             <button class="tool-button" id="italic-button" aria-label="Italic">
-              <span class="material-symbols-outlined">format_italic</span>
+              <i class="material-icons">format_italic</i>
             </button>
             <button class="tool-button" id="underline-button" aria-label="Underline">
-              <span class="material-symbols-outlined">format_underline</span>
+              <i class="material-icons">format_underline</i>
             </button>
           </div>
         </div>
         <div class="right-tools">
           <button class="save-button" id="save-button" aria-label="Save note">
-            <span class="material-symbols-outlined">save</span>
-            Save
+            <i class="material-icons">save</i>
+            <span>Save</span>
+          </button>
+          <button class="download-button" id="download-button" aria-label="Download note">
+            <i class="material-icons">download</i>
           </button>
           <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-            <span class="material-symbols-outlined">dark_mode</span>
+            <i class="material-icons">dark_mode</i>
           </button>
         </div>
       </div>
