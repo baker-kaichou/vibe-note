@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // DOM Elements
   const sidebar = document.getElementById("sidebar");
-  const toggleSidebar = document.getElementById("toggle-sidebar");
   const newNoteButton = document.getElementById("new-note");
   const notesList = document.getElementById("notes-list");
   const noteTitle = document.getElementById("note-title");
@@ -18,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // State
   let notes = [];
   let currentNoteId = null;
+  let activeDeleteItem = null;
 
   // Initialize
   initApp();
@@ -35,26 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
       loadNote(notes[0]);
       setActiveNote(notes[0].id);
     }
-    
-    // Init sidebar state based on screen size
-    updateSidebarState();
-    window.addEventListener('resize', updateSidebarState);
-  }
-
-  function updateSidebarState() {
-    if (window.innerWidth <= 768) {
-      sidebar.classList.add("collapsed");
-    } else {
-      sidebar.classList.remove("collapsed");
-    }
   }
 
   function setupEventListeners() {
-    // Sidebar toggle
-    toggleSidebar.addEventListener("click", () => {
-      sidebar.classList.toggle("collapsed");
-    });
-
     // New note
     newNoteButton.addEventListener("click", createNewNote);
 
@@ -65,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
     downloadButton.addEventListener("click", downloadNote);
 
     // Theme toggle
-    themeToggle.addEventListener("click", toggleTheme);
+    themeToggle.addEventListener("change", toggleTheme);
 
     // Font controls
     fontFamily.addEventListener("change", updateFontFamily);
@@ -81,13 +64,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Keyboard shortcuts
     document.addEventListener("keydown", handleKeyboardShortcuts);
     
-    // Close sidebar when clicking outside on mobile
+    // Handle clicks on document to close any open delete buttons
     document.addEventListener("click", (e) => {
-      if (window.innerWidth <= 768 && 
-          !sidebar.contains(e.target) && 
-          !toggleSidebar.contains(e.target) &&
-          !sidebar.classList.contains("collapsed")) {
-        sidebar.classList.add("collapsed");
+      // If click is outside a note item
+      if (!e.target.closest(".note-item") && activeDeleteItem) {
+        document.querySelectorAll(".note-item").forEach(item => {
+          item.classList.remove("show-delete");
+        });
+        activeDeleteItem = null;
       }
     });
   }
@@ -115,11 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderNotesList();
     loadNote(newNote);
     
-    // On mobile, collapse sidebar after creating a new note
-    if (window.innerWidth <= 768) {
-      sidebar.classList.add("collapsed");
-    }
-    
     // Focus on the title field
     noteTitle.focus();
   }
@@ -143,6 +122,10 @@ document.addEventListener("DOMContentLoaded", () => {
       noteItem.setAttribute("data-id", note.id);
       noteItem.setAttribute("tabindex", "0");
 
+      // Create note content container
+      const noteItemContent = document.createElement("div");
+      noteItemContent.className = "note-item-content";
+
       const noteItemTitle = document.createElement("div");
       noteItemTitle.className = "note-item-title";
       noteItemTitle.textContent = note.title;
@@ -151,33 +134,78 @@ document.addEventListener("DOMContentLoaded", () => {
       noteItemExcerpt.className = "note-item-excerpt";
       noteItemExcerpt.textContent = stripHtml(note.content).substring(0, 50);
 
-      noteItem.appendChild(noteItemTitle);
-      noteItem.appendChild(noteItemExcerpt);
+      noteItemContent.appendChild(noteItemTitle);
+      noteItemContent.appendChild(noteItemExcerpt);
+      
+      // Create delete button
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "delete-button";
+      deleteButton.innerHTML = '<i class="material-icons">delete</i>';
+      deleteButton.setAttribute("aria-label", "Delete note");
+      
+      // Add delete functionality
+      deleteButton.addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent note selection when clicking delete
+        deleteNote(note.id);
+      });
 
-      noteItem.addEventListener("click", () => {
+      noteItem.appendChild(noteItemContent);
+      noteItem.appendChild(deleteButton);
+
+      noteItem.addEventListener("click", (e) => {
+        // If there's already an active delete item, hide it
+        if (activeDeleteItem && activeDeleteItem !== noteItem) {
+          activeDeleteItem.classList.remove("show-delete");
+        }
+        
+        // Toggle delete button visibility
+        if (e.target.closest(".note-item") && !e.target.closest(".delete-button")) {
+          if (noteItem.classList.contains("show-delete")) {
+            noteItem.classList.remove("show-delete");
+            activeDeleteItem = null;
+          } else {
+            noteItem.classList.add("show-delete");
+            activeDeleteItem = noteItem;
+          }
+        }
+        
         loadNote(note);
         setActiveNote(note.id);
-        
-        // On mobile, collapse sidebar after selecting a note
-        if (window.innerWidth <= 768) {
-          sidebar.classList.add("collapsed");
-        }
       });
 
       noteItem.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           loadNote(note);
           setActiveNote(note.id);
-          
-          // On mobile, collapse sidebar after selecting a note
-          if (window.innerWidth <= 768) {
-            sidebar.classList.add("collapsed");
-          }
+        } else if (e.key === "Delete") {
+          deleteNote(note.id);
         }
       });
 
       notesList.appendChild(noteItem);
     });
+  }
+
+  function deleteNote(id) {
+    if (confirm("Are you sure you want to delete this note?")) {
+      notes = notes.filter(note => note.id !== id);
+      saveNotesToStorage();
+      
+      // If the deleted note was the current note, load another note if available
+      if (id === currentNoteId) {
+        if (notes.length > 0) {
+          loadNote(notes[0]);
+          setActiveNote(notes[0].id);
+        } else {
+          // If no notes left, clear the editor
+          currentNoteId = null;
+          noteTitle.value = "";
+          noteContent.innerHTML = "";
+        }
+      }
+      
+      renderNotesList();
+    }
   }
 
   function loadNote(note) {
@@ -242,75 +270,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const note = notes[noteIndex];
     
-    // Create a more user-friendly formatted file
-    const noteData = {
-      title: note.title,
-      content: stripHtml(note.content),
-      createdAt: new Date(note.createdAt).toLocaleString(),
-      updatedAt: new Date().toLocaleString(),
-    };
-
-    // For plain text file
-    const textContent = `# ${noteData.title}\n\n${noteData.content}\n\nCreated: ${noteData.createdAt}\nUpdated: ${noteData.updatedAt}`;
+    // Create a formatted text file
+    const textContent = `# ${note.title}\n\n${stripHtml(note.content)}\n\nCreated: ${new Date(note.createdAt).toLocaleString()}\nUpdated: ${new Date().toLocaleString()}`;
     
-    // For HTML file preserving formatting
-    const htmlContent = `<!DOCTYPE html>
-<html>
-<head>
-  <title>${noteData.title}</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-    h1 { color: #e94057; }
-    .meta { color: #888; font-size: 0.9em; margin-top: 30px; }
-  </style>
-</head>
-<body>
-  <h1>${noteData.title}</h1>
-  <div class="content">
-    ${note.content}
-  </div>
-  <div class="meta">
-    <p>Created: ${noteData.createdAt}<br>
-    Updated: ${noteData.updatedAt}</p>
-  </div>
-</body>
-</html>`;
-
-    // Create both TXT and HTML versions
-    const textBlob = new Blob([textContent], { type: "text/plain" });
-    const htmlBlob = new Blob([htmlContent], { type: "text/html" });
-    
-    // Create a safe filename from the title
+    // Create safe filename
     const safeTitle = note.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
     
-    // Show download options to user
-    const downloadTxt = document.createElement("a");
-    downloadTxt.href = URL.createObjectURL(textBlob);
-    downloadTxt.download = `${safeTitle}.txt`;
-    downloadTxt.style.display = "none";
-    document.body.appendChild(downloadTxt);
-    downloadTxt.click();
-    
-    // Small delay between downloads
-    setTimeout(() => {
-      const downloadHtml = document.createElement("a");
-      downloadHtml.href = URL.createObjectURL(htmlBlob);
-      downloadHtml.download = `${safeTitle}.html`;
-      downloadHtml.style.display = "none";
-      document.body.appendChild(downloadHtml);
-      downloadHtml.click();
-      
-      // Clean up the URLs
-      URL.revokeObjectURL(downloadTxt.href);
-      URL.revokeObjectURL(downloadHtml.href);
-      document.body.removeChild(downloadTxt);
-      document.body.removeChild(downloadHtml);
-    }, 100);
+    // Create and trigger the download
+    const blob = new Blob([textContent], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement("a");
+    downloadLink.href = url;
+    downloadLink.download = `${safeTitle}.txt`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
     
     // Provide visual feedback for download
-    downloadButton.innerHTML = '<i class="material-icons">check</i>';
+    downloadButton.innerHTML = '<i class="material-icons">check</i><span>Downloaded</span>';
     setTimeout(() => {
-      downloadButton.innerHTML = '<i class="material-icons">download</i>';
+      downloadButton.innerHTML = '<i class="material-icons">download</i><span>Download</span>';
     }, 2000);
   }
 
@@ -319,28 +299,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function toggleTheme() {
-    document.body.classList.toggle("dark-theme");
-    document.body.classList.toggle("light-theme");
+    const isDarkMode = themeToggle.checked;
     
-    const isDarkMode = document.body.classList.contains("dark-theme");
+    if (isDarkMode) {
+      document.body.classList.add("dark-theme");
+      document.body.classList.remove("light-theme");
+    } else {
+      document.body.classList.add("light-theme");
+      document.body.classList.remove("dark-theme");
+    }
+    
     localStorage.setItem("baelz-dark-mode", isDarkMode);
-    
-    // Update icon
-    themeToggle.innerHTML = `<i class="material-icons">${
-      isDarkMode ? "light_mode" : "dark_mode"
-    }</i>`;
   }
 
   function checkTheme() {
     const isDarkMode = localStorage.getItem("baelz-dark-mode") === "true";
+    themeToggle.checked = isDarkMode;
+    
     if (isDarkMode) {
       document.body.classList.add("dark-theme");
       document.body.classList.remove("light-theme");
-      themeToggle.innerHTML = '<i class="material-icons">light_mode</i>';
     } else {
       document.body.classList.add("light-theme");
       document.body.classList.remove("dark-theme");
-      themeToggle.innerHTML = '<i class="material-icons">dark_mode</i>';
     }
   }
 
