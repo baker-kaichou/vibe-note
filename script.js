@@ -1,6 +1,7 @@
-// Get the note editor and save button elements
+// Get the note editor, save button, and theme switcher elements
 const noteEditor = document.getElementById('note-editor');
 const saveButton = document.getElementById('save-button');
+const themeSwitcher = document.getElementById('theme-switcher');
 
 // Add event listener to the save button
 saveButton.addEventListener('click', () => {
@@ -20,6 +21,20 @@ saveButton.addEventListener('click', () => {
 
     // Clean up
     URL.revokeObjectURL(link.href);
+});
+
+// Add event listener to the theme switcher
+themeSwitcher.addEventListener('click', () => {
+    // Toggle dark mode
+    document.body.classList.toggle('dark-mode');
+
+    // Update the theme switcher icon
+    const icon = themeSwitcher.querySelector('.material-symbols-outlined');
+    if (document.body.classList.contains('dark-mode')) {
+        icon.textContent = 'light_mode';
+    } else {
+        icon.textContent = 'dark_mode';
+    }
 });
 
 // Add event listener to the window beforeunload event
